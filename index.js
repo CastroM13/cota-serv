@@ -3,6 +3,8 @@ const app = express()
 import fetch from 'node-fetch';
 import jsdom from 'jsdom';
 import cors from 'cors';
+import { userRoutes } from './routes/user.js';
+import mongoose from 'mongoose';
 
 const parseHTML = (htmlString) => {
     const doc = new jsdom.JSDOM(htmlString);
@@ -30,7 +32,14 @@ const tableToJson = (table) => {
     return rows;
 }
 
+mongoose.connect('mongodb+srv://cotaserv:cotaserv@cotaserv.2qhyeht.mongodb.net/?retryWrites=true&w=majority', { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('MongoDB Connected'))
+  .catch(err => console.log(err));
+
+
 app.use(cors())
+
+app.use('/user', userRoutes)
 
 app.get('/cota/:id', function (req, res) {
     fetch(`https://www.cepea.esalq.usp.br/br/indicador/${req.params.id}.aspx`)
