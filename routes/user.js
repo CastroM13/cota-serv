@@ -62,7 +62,7 @@ userRoutes.delete('', async (req, res, next) => {
   try {
     const token = jwt.decode(req.headers.authorization.split('Bearer ')[1], { complete: true });
     
-    const existingUser = await User.findOne({ email: token.payload.email });
+    const existingUser = await User.findById(token.payload.id);
     
     if (existingUser) {
       await User.findByIdAndDelete(existingUser.id);
@@ -116,7 +116,7 @@ userRoutes.patch('/password', jsonParser, async (req, res, next) => {
   try {
     const token = jwt.decode(req.headers.authorization.split('Bearer ')[1], { complete: true });
     
-    const existingUser = await User.findOne({ email: token.payload.email });
+    const existingUser = await User.findById(token.payload.id);
     
     if (existingUser) {
       const hashedPassword = await bcrypt.hash(req.body.password, 10);
