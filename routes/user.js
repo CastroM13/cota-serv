@@ -61,9 +61,9 @@ userRoutes.delete('', async (req, res, next) => {
 
   try {
     const token = jwt.decode(req.headers.authorization.split('Bearer ')[1], { complete: true });
-    
+
     const existingUser = await User.findById(token.payload.id);
-    
+
     if (existingUser) {
       await User.findByIdAndDelete(existingUser.id);
       return res.status(200).json({ message: 'Usuário removido com sucesso' });
@@ -90,11 +90,11 @@ userRoutes.patch('', jsonParser, async (req, res, next) => {
 
   try {
     const token = jwt.decode(req.headers.authorization.split('Bearer ')[1], { complete: true });
-    
+
     const existingUser = await User.findById(token.payload.id);
-    
+
     if (existingUser) {
-      await User.findByIdAndUpdate(existingUser.id, {...req.body});
+      await User.findByIdAndUpdate(existingUser.id, { ...req.body });
       return res.status(200).json({ message: 'Usuário atualizado com sucesso' });
     } else {
       return res.status(404).json({ error: 'Usuário não encontrado' });
@@ -115,12 +115,12 @@ userRoutes.patch('/password', jsonParser, async (req, res, next) => {
 
   try {
     const token = jwt.decode(req.headers.authorization.split('Bearer ')[1], { complete: true });
-    
+
     const existingUser = await User.findById(token.payload.id);
-    
+
     if (existingUser) {
       const hashedPassword = await bcrypt.hash(req.body.password, 10);
-      await User.findByIdAndUpdate(existingUser.id, {password: hashedPassword});
+      await User.findByIdAndUpdate(existingUser.id, { password: hashedPassword });
       return res.status(200).json({ message: 'Senha do usuário atualizada com sucesso' });
     } else {
       return res.status(404).json({ error: 'Usuário não encontrado' });
@@ -130,7 +130,7 @@ userRoutes.patch('/password', jsonParser, async (req, res, next) => {
   }
 });
 
-userRoutes.get('', async (req,res) => {
+userRoutes.get('', async (req, res, next) => {
   const token = jwt.decode(req.query.token, { complete: true });
   try {
     const user = await User.findById(token.payload.id)
@@ -142,7 +142,76 @@ userRoutes.get('', async (req,res) => {
   } catch (error) {
     next(error);
   }
-  
+
 })
+
+userRoutes.post('/favorite', jsonParser, async (req, res, next) => {
+  const favorite = req.body;
+  if (!req.headers.authorization) {
+    return res.status(401).json({ error: 'Credenciais não enviadas!' });
+  }
+
+  if (!favorite) {
+    return res.status(401).json({ error: 'Dados não enviados!' });
+  }
+
+  try {
+    const token = jwt.decode(req.headers.authorization.split('Bearer ')[1], { complete: true });
+
+    const existingUser = await User.findById(token.payload.id);
+
+    if (existingUser) {
+      const curr = existingUser.favorites;
+      curr.push(req.body);
+      await User.findByIdAndUpdate(existingUser.id, { favorites: curr });
+      return res.status(200).json({ message: 'Senha do usuário atualizada com sucesso' });
+    } else {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
+userRoutes.get('/favorite', async (req, res, next) => {
+  const token = jwt.decode(req.headers.authorization.split('Bearer ')[1], { complete: true });
+  try {
+    const user = await User.findById(token.payload.id)
+    if (user) {
+      res.json(user.favorites)
+    } else {
+      res.json({ error: 'Usuário não encontrado!' });
+    }
+  } catch (error) {
+    next(error);
+  }
+
+});
+
+userRoutes.delete('/favorite', async (req, res, next) => {
+  if (!req.headers.authorization) {
+    return res.status(401).json({ error: 'Credenciais não enviadas!' });
+  }
+
+  try {
+    const favoriteId = req.query.id;
+    const token = jwt.decode(req.headers.authorization.split('Bearer ')[1], { complete: true });
+
+    const existingUser = await User.findById(token.payload.id);
+
+    if (existingUser) {
+      if (existingUser.favorites.find(c => c.id === favoriteId)) {
+        const curr = existingUser.favorites.filter(c => c.id != favoriteId);
+        await User.findByIdAndUpdate(existingUser.id, { favorites: curr });
+        return res.status(200).json({ data: curr, message: 'Lista de favoritos atualizada com sucesso' });
+      }
+      return res.status(404).json({ message: 'Favorito não encontrado' });
+    } else {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+  } catch (error) {
+    next(error);
+  }
+});
 
 export { userRoutes }
